@@ -96,6 +96,22 @@ building the same checkout at once, sharing `app/build/...`.
   parallel. WIP = 1 in `docs/agent-work-queue.md` now covers the build, not just the item.
 - **Prevented** by running every build through the lock rather than relying on discipline.
 
+## Worked example: the emulator boots but every capture is an ANR dialog
+
+`adb` reported `device`, `sys.boot_completed=1`, and the launcher had focus — yet the app never drew,
+and the screen showed `Application Not Responding: com.android.systemui`. Killing and re-booting
+changed nothing, which made it look like an app defect.
+
+- **Recognised** because the ANR named `com.android.systemui`, not the app, and the app process was
+  alive with no `FATAL`/`ANR` against its package in logcat.
+- **Resolved** by launching the emulator the way `start-manual-test.ps1` does: **windowed, with
+  `-gpu host`**. `-no-window` combined with a software renderer (`swiftshader_indirect`) ANR'd
+  SystemUI on a desktop host with a discrete GPU; the windowed/native path rendered correctly
+  immediately. (`start-manual-test.ps1` already defaults to `-gpu auto`; only its explicit
+  `-NoWindow` switch is affected.)
+- **Lesson:** "the app is stuck on the splash" is worth one `dumpsys window | grep mCurrentFocus`
+  before it is treated as a product bug — if the ANR is SystemUI's, it is the render path.
+
 ## What belongs here
 
 | Environment gap | Where it is fixed |
@@ -104,6 +120,7 @@ building the same checkout at once, sharing `app/build/...`.
 | A tool exists but the agent's shell cannot resolve it (`.cmd` under git-bash) | give it a shell-agnostic entry point (`python3.exe`), not just a `.cmd` |
 | A provisioned tool is missing because the host started earlier | restart the host, or use the absolute path; `verify-setup.ps1` names it |
 | Concurrent builds corrupting shared outputs | `gradle-lock.ps1` (one build per checkout) |
+| Emulator boots but SystemUI ANRs / the screen is black | run it windowed with a real GPU (`-gpu host`); do not use `-no-window` with a software renderer on a desktop host |
 | Stray quote or duplicate in PATH | `repair-path-quotes.ps1` |
 | No emulator / no hypervisor | `install-toolchain.ps1`; WHPX is the one admin step |
 | Slow builds | `add-defender-exclusions.ps1` |
