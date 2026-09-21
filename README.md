@@ -332,6 +332,48 @@ machine.
 
 ---
 
+## Manual validation on the emulator
+
+Automated checks prove behaviour. They cannot tell you whether a flow feels obvious, whether a
+control is reachable with a thumb, or whether doing the same thing five times is pleasant. For
+that you need to use the app yourself, and the fastest way is an emulator window on this machine.
+
+```powershell
+# build the current project, install it and open the emulator window
+.\scripts\start-manual-test.ps1 -ProjectPath D:\repos\my-app -Build
+
+# or launch straight into a debug state, then hand the window over
+.\scripts\start-manual-test.ps1 -ProjectPath D:\repos\my-app -LaunchArgs '--es','photo_print_scenario','editor'
+
+# when you are finished
+.\scripts\stop-manual-test.ps1
+```
+
+The emulator window accepts clicks, drags, the scroll wheel and the keyboard, so it behaves like a
+phone for anything except physical feel. The script is safe to re-run: it reuses a running
+emulator, reinstalls the APK and relaunches the app. It prints the APK path, its SHA-256, the git
+commit and the exact activity it launched, so any screenshot is traceable to a specific build.
+
+Useful switches:
+
+| Switch | Effect |
+|---|---|
+| `-DryRun` | Show what it would do, change nothing |
+| `-NoWindow` | Boot headless (pre-load a state, then look at it another way) |
+| `-ColdBoot` | Skip the snapshot for a deterministic starting state |
+| `-Apk <path>` | Install a specific artifact instead of the newest debug APK |
+| `-LaunchArgs` | Extra `am start` tokens, e.g. debug-scenario extras |
+
+Make it part of the loop: after any change to a screen or control, open a session and click
+through the changed flow before calling it done. What you see is the verdict - a green test run is
+not a substitute, and a screenshot nobody has looked at is not evidence.
+
+Validation works best at **checkpoints** - a completed screen, a fixed defect, a finished flow -
+rather than after every edit. When a checkpoint is ready, open a session, walk the goal it
+touches, and record what you saw (including anything that felt wrong) rather than a PASS/FAIL.
+
+---
+
 ## Troubleshooting
 
 Every entry below was hit and diagnosed for real.
@@ -420,6 +462,8 @@ README.md                              this guide
 LICENSE
 scripts/install-toolchain.ps1          provision JDK, SDK, packages, AVD, env vars (no admin)
 scripts/verify-setup.ps1               verify every layer; PASS/WARN/FAIL report
+scripts/start-manual-test.ps1          interactive emulator session for manual validation
+scripts/stop-manual-test.ps1           stop that session
 scripts/repair-path-quotes.ps1         find/repair PATH entries containing a stray quote
 scripts/add-defender-exclusions.ps1    build-speed exclusions (elevated)
 templates/android/                     post-scaffold additions: ktlint, lint, signing, CI, gitattributes
