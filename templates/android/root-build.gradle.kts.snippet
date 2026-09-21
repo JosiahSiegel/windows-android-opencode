@@ -1,0 +1,5 @@
+// Addition for build.gradle.kts (root project).
+// Add this line inside the existing `plugins { }` block so the ktlint plugin is available to
+// subprojects without being applied to the root project itself.
+
+alias(libs.plugins.ktlint) apply false

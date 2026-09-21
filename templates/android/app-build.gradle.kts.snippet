@@ -1,0 +1,52 @@
+// ---------------------------------------------------------------------------
+// Additions for app/build.gradle.kts
+//
+// 1. Add the plugin alias to the existing `plugins { }` block:
+//        alias(libs.plugins.ktlint)
+//
+// 2. Inside `android { }`, add the signingConfigs block and the lint block, and extend the
+//    existing `buildTypes { release { ... } }` as shown.
+//
+// 3. Append the ktlint block at the end of the file.
+// ---------------------------------------------------------------------------
+
+// --- inside android { } ----------------------------------------------------
+
+    // Release signing is driven entirely by environment variables, so no secret material is
+    // ever committed. When the variables are absent no signing config is created and debug
+    // builds are unaffected; release builds then produce an unsigned APK.
+    val releaseKeystorePath = System.getenv("ANDROID_KEYSTORE_PATH")
+
+    signingConfigs {
+        if (!releaseKeystorePath.isNullOrBlank()) {
+            create("release") {
+                storeFile = file(releaseKeystorePath)
+                storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            if (!releaseKeystorePath.isNullOrBlank()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
+    }
+
+    lint {
+        abortOnError = true
+        // Turn this on once the project has no lint warnings to fix.
+        warningsAsErrors = false
+    }
+
+// --- at the end of the file ------------------------------------------------
+
+ktlint {
+    android.set(true)
+    ignoreFailures.set(false)
+}

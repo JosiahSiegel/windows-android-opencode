@@ -1,0 +1,13 @@
+root = true
+
+[*.{kt,kts}]
+# Jetpack Compose functions are PascalCase by convention, which conflicts with ktlint's default
+# function-naming rule. Exempt only functions annotated @Composable; everything else still has to
+# be camelCase.
+ktlint_function_naming_ignore_when_annotated_with = Composable
+
+# ktlint's filename rule fires when a file holds exactly one top-level declaration and is not named
+# after it. That is a normal Kotlin pattern (for example a NavigationKeys.kt holding a single key),
+# and the rule is purely stylistic, so it is disabled rather than renaming files whenever
+# declarations are added or removed.
+ktlint_standard_filename = disabled

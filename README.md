@@ -289,6 +289,22 @@ the closest available substitute for the language server support V2 does not hav
 
 ---
 
+## Starting a new Android project
+
+```bash
+android create --name="My App" --output=<dir> empty-activity
+```
+
+Then apply `templates/android/` on top: ktlint, Android Lint configuration, environment-driven
+release signing, `.gitattributes`, and a CI workflow. See `templates/android/README.md` for the
+file-by-file checklist and the reasoning behind each piece.
+
+Scaffolding fresh rather than copying a saved project is deliberate. `android create` tracks
+Google's current AGP, Kotlin and Compose defaults, so a new app does not start a version behind. A
+stored template would freeze that day's versions and silently rot.
+
+---
+
 ## Daily workflow
 
 ```bash
@@ -406,6 +422,7 @@ scripts/install-toolchain.ps1          provision JDK, SDK, packages, AVD, env va
 scripts/verify-setup.ps1               verify every layer; PASS/WARN/FAIL report
 scripts/repair-path-quotes.ps1         find/repair PATH entries containing a stray quote
 scripts/add-defender-exclusions.ps1    build-speed exclusions (elevated)
+templates/android/                     post-scaffold additions: ktlint, lint, signing, CI, gitattributes
 docs/session-log.md                    the original machine-specific record, kept as an appendix
 ```
 

@@ -1,0 +1,18 @@
+# Normalise line endings across the project.
+* text=auto
+
+# The Gradle wrapper must stay LF or the shell cannot execute it.
+gradlew text eol=lf
+*.sh text eol=lf
+
+# Windows batch files must be CRLF.
+*.bat text eol=crlf
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.jar binary
+*.keystore binary
+*.jks binary

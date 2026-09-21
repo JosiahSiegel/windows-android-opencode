@@ -1,0 +1,11 @@
+# Additions for gradle/libs.versions.toml
+#
+# Add these to the existing sections. Check the ktlint plugin's current release before copying the
+# version, since it is the only version pinned by these snippets:
+#   https://plugins.gradle.org/plugin/org.jlleitschuh.gradle.ktlint
+
+# Under [versions]
+ktlint = "14.2.0"
+
+# Under [plugins]
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
