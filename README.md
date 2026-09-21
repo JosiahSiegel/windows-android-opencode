@@ -66,8 +66,8 @@ at all, which is often the better option since Google keeps its template current
 ## Quick start
 
 ```powershell
-git clone <this-repo> $env:USERPROFILE\src\opencode-android-setup
-cd $env:USERPROFILE\src\opencode-android-setup\scripts
+# from your clone of this repository
+cd scripts
 
 # 1. Provision the toolchain (no admin needed; idempotent, safe to re-run)
 .\install-toolchain.ps1

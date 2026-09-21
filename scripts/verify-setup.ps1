@@ -56,11 +56,11 @@ function Invoke-Check {
     param([string]$Item, [scriptblock]$Body)
     try {
         $outcome = & $Body
-        if ($null -eq $outcome) { Add-Result $Item 'PASS'; return }
-        Add-Result $Item $outcome.Status $outcome.Detail
+        if ($null -eq $outcome) { Add-Result -Item $Item -Status 'PASS'; return }
+        Add-Result -Item $Item -Status $outcome.Status -Detail $outcome.Detail
     }
     catch {
-        Add-Result $Item 'FAIL' $_.Exception.Message
+        Add-Result -Item $Item -Status 'FAIL' -Detail $_.Exception.Message
     }
 }
 

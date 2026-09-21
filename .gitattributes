@@ -1,0 +1,22 @@
+# Normalise line endings across the repo. This matters here: the scripts are PowerShell (which
+# tolerates either) but the docs and the Gradle wrapper conventions do not always agree.
+* text=auto
+
+# Shell scripts must stay LF or the shell cannot execute them.
+*.sh text eol=lf
+gradlew text eol=lf
+
+# Windows batch files must be CRLF.
+*.bat text eol=crlf
+
+# PowerShell is CRLF-friendly and CRLF is what Windows tooling expects.
+*.ps1 text eol=crlf
+*.psd1 text eol=crlf
+
+# Binary assets must not be touched.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
+*.zip binary

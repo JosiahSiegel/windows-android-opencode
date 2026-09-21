@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint PowerShell
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse all scripts
+        shell: pwsh
+        run: |
+          $failed = $false
+          Get-ChildItem scripts/*.ps1 | ForEach-Object {
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              $_.FullName, [ref]$null, [ref]$errors) | Out-Null
+            if ($errors -and $errors.Count -gt 0) {
+              $failed = $true
+              Write-Host "FAIL  $($_.Name)"
+              $errors | ForEach-Object { Write-Host "        $($_.Message)" }
+            }
+            else {
+              Write-Host "PASS  $($_.Name)"
+            }
+          }
+          if ($failed) { exit 1 }
+
+      - name: Run PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Install-Module PSScriptAnalyzer -Force -Scope CurrentUser
+          $results = Invoke-ScriptAnalyzer -Path scripts -Recurse -Settings ./PSScriptAnalyzerSettings.psd1
+          if ($results) {
+            $results | Format-Table -AutoSize | Out-String | Write-Host
+            Write-Host "::error::$($results.Count) PSScriptAnalyzer finding(s)"
+            exit 1
+          }
+          Write-Host 'PSScriptAnalyzer: clean'
+
+      - name: Smoke test the installer (dry run)
+        shell: pwsh
+        run: |
+          # -DryRun performs no downloads and changes nothing, so it is safe on a hosted runner.
+          ./scripts/install-toolchain.ps1 -DryRun -ToolchainRoot "$env:RUNNER_TEMP\toolchains" -SdkPath "$env:RUNNER_TEMP\sdk"
+
+      - name: Check for machine-specific paths
+        shell: pwsh
+        run: |
+          # Guard against publishing a real user profile path. Placeholders such as
+          # C:\Users\<you> are intentional and must not fail the build, so they are excluded by
+          # the negative lookahead.
+          $pattern = 'C:\\Users\\(?!<)'
+          $hits = Select-String -Path README.md, docs/*.md -Pattern $pattern -AllMatches
+          if ($hits) {
+            $hits | ForEach-Object { Write-Host "  $($_.Path):$($_.LineNumber): $($_.Line.Trim())" }
+            Write-Host "::error::a machine-specific user path is present"
+            exit 1
+          }
+          Write-Host 'No machine-specific user paths found'

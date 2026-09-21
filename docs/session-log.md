@@ -54,7 +54,7 @@ a separate, older V1 install. Consequences:
 | Bundled CLI | `resources\opencode-cli.exe`, version 2.0.12 |
 | Standalone CLI (was) | V1 `1.18.29` via WinGet — unused by the session |
 | Standalone CLI (now) | V2 `2.0.12` at `D:\repos\opencode-v2\2.0.12\opencode.exe`, first on user `PATH` |
-| Global config | `C:\Users\josia\.config\opencode\opencode.json` — still V1 shape |
+| Global config | `C:\Users\<you>\.config\opencode\opencode.json` — still V1 shape |
 | Global plugins | `oh-my-openagent`, `opencode-models-discovery` — both V1-only, inert under V2 |
 | Java / JDK | **absent** |
 | `adb` / Android SDK | **absent** — all of it lived in WSL |
@@ -82,7 +82,7 @@ Desktop 2.0.12, so this phase reduced to aligning the *standalone CLI*.
 - [x] Verified fresh-terminal resolution: `(Get-Command opencode).Source` →
       `D:\repos\opencode-v2\2.0.12\opencode.exe` and `opencode --version` → `opencode v2.0.12`
 - [x] Verified V2 loads the existing V1-shaped config without error using
-      `opencode debug paths` (reports config dir `C:\Users\josia\.config\opencode`)
+      `opencode debug paths` (reports config dir `C:\Users\<you>\.config\opencode`)
 - [x] Removed the stale 2.0.6 build and both installers, reclaiming ~180 MB
 - [ ] Remove the unused V1 CLI — safe now, since it does not host the session:
       - `winget list opencode` to get the exact package ID
@@ -246,12 +246,12 @@ Notes and uncertainties:
 
 Installed with **no admin rights**, using a portable JDK and a user-scoped SDK. No Android Studio.
 
-- [x] JDK: Temurin **21.0.12.1+1 LTS** portable zip → `D:\toolchains\jdk-21.0.12.1+1`
+- [x] JDK: Temurin **21.0.12.1+1 LTS** portable zip → `D:\toolchains\jdk-<version>`
       (fetched from the Adoptium API; MSI installers would have required elevation, so the zip
       route was used instead)
 - [x] `cmdline-tools` build **15859902** → `%LOCALAPPDATA%\Android\Sdk\cmdline-tools\latest`
 - [x] User environment variables set:
-      - `JAVA_HOME` = `D:\toolchains\jdk-21.0.12.1+1`
+      - `JAVA_HOME` = `D:\toolchains\jdk-<version>`
       - `ANDROID_HOME` = `%LOCALAPPDATA%\Android\Sdk`
       - `PATH` += `%JAVA_HOME%\bin`, `%ANDROID_HOME%\cmdline-tools\latest\bin`,
         `%ANDROID_HOME%\platform-tools`, `%ANDROID_HOME%\emulator`
@@ -279,7 +279,7 @@ Footprint: SDK ~5.8 GB at `%LOCALAPPDATA%\Android\Sdk`; JDK ~330 MB at `D:\toolc
 - [x] WHPX was **already installed and usable** — no admin action or reboot was needed:
       `emulator -accel-check` → `WHPX(10.0.26200) is installed and usable`
 - [x] AVD created: `pixel_api36` (Pixel 7, Android 16 / API 36, `google_apis`, x86_64) at
-      `C:\Users\josia\.android\avd\pixel_api36.avd`
+      `C:\Users\<you>\.android\avd\pixel_api36.avd`
 - [x] Boot verified end-to-end, headless: `sys.boot_completed=1`, `adb devices` → `emulator-5554`,
       `ro.build.version.release` → `16`, then a clean `adb emu kill`
 - [x] Note: `avdmanager` prints a harmless `Could not load devices.xml` warning during creation;
@@ -569,7 +569,7 @@ Added globally and confirmed connected:
 
 `%USERPROFILE%\.gradle\gradle.properties` created: 4 GB daemon heap, parallel builds, build cache,
 Kotlin daemon heap, and `org.gradle.java.home` pinned to the Temurin 21 install. Verified in use —
-Gradle reports `Daemon JVM: D:\toolchains\jdk-21.0.12.1+1 (from org.gradle.java.home)`.
+Gradle reports `Daemon JVM: D:\toolchains\jdk-<version> (from org.gradle.java.home)`.
 
 ### Project template — `D:\repos\android-template`
 
