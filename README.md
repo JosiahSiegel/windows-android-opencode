@@ -24,6 +24,7 @@ summarising documentation. Where a claim is version-specific or uncertain, it sa
 | Manual validation | An interactive emulator window at any checkpoint (`start-manual-test.ps1`) |
 | Long fix lists | A durable work queue the agent consumes one item at a time (`docs/agent-work-queue.md`) |
 | Environment gaps | Missing tools are fixed in the provisioner, never worked around (`docs/environment-gaps.md`) |
+| Parallel workers | Run workers on disjoint files; serialize builds; orchestrator commits (`docs/agent-work-queue.md`) |
 
 **Requirements:** Windows 10 1803+ or Windows 11, x64 (or ARM with the matching binaries), ~6 GB of
 free disk, and a normal user account. Administrator rights are needed **once**, for emulator

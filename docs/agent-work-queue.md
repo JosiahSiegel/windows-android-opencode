@@ -83,6 +83,24 @@ It takes a machine-wide named mutex keyed by the project directory, so different
 build in parallel and only builds of the same checkout serialise. See
 `docs/environment-gaps.md` for the failure it prevents.
 
+## Parallel workers and shared files
+
+Fresh-context workers may run in parallel, but **only on disjoint files**. Two workers editing one
+file - above all a shared end-to-end test such as `ScreenFlowJvmTest.kt` - produce interleaved hunks
+that cannot be attributed to a single item, and each sees the other's half-finished edit as a
+compile failure. Hard-won rules:
+
+- **Group items by file before dispatching.** One worker per file per batch; split a file's items
+  across batches, never across simultaneous workers.
+- **Prefer a new focused test file** over editing a shared one. Touch a shared test only when the
+  item is genuinely about the flow it pins, and keep the change to a single hunk if you can.
+- **Workers leave the tree dirty; the orchestrator stages, verifies and commits.** A worker that
+  commits cannot see the other workers' in-flight changes, and its commit will not compile.
+- **Check `git status` before committing.** A worker occasionally leaves a scratch or diagnostic
+  test behind (a `ZzDiagTest`-style file); it must never reach a commit.
+- **Verify once, after the batch**, not per worker, and read the counts from the result XML rather
+  than trusting a log tail.
+
 ## Why this finishes a 30-item list
 
 - The agent's context is only ever as large as **one item**.

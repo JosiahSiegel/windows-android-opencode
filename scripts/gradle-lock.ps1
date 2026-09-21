@@ -62,8 +62,11 @@ try {
         throw "Timed out after ${TimeoutSeconds}s waiting for the build lock for '$directory'. Another build is still running."
     }
     Write-Host "[gradle-lock] lock held for $directory" -ForegroundColor DarkCyan
-    & cmd.exe /d /c $Command
-    $exitCode = $LASTEXITCODE
+    # Run in-process: shelling out to cmd.exe corrupts redirected output (and emits a spurious
+    # "memory-mapped stream" error when stdout is a file), which is worse than useless for a tool
+    # whose whole job is to make build output trustworthy.
+    & ([scriptblock]::Create($Command))
+    $exitCode = if ($null -ne $LASTEXITCODE) { $LASTEXITCODE } else { 0 }
 } finally {
     if ($acquired) { $mutex.ReleaseMutex() }
     $mutex.Dispose()

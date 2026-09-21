@@ -42,6 +42,38 @@ Play Publisher is the natural choice on a Gradle project.
 **`.gitattributes`** — keeps `gradlew` and `*.sh` at LF and `*.bat` at CRLF. Mixing these up is a
 classic Windows-only breakage that passes locally and fails in CI.
 
+## Cross-platform portability (Windows)
+
+A project that builds on Linux CI but is developed on Windows is a common trap: Gradle is portable,
+hand-written tooling usually is not. A verification script must actually have run on the target OS
+before that profile can be called VERIFIED there. Defects found the hard way in a real project:
+
+- `./gradlew` is not an executable name on Windows - use `gradlew.bat`;
+- a JDK contains `java.exe`, not `java`, so an `is_file()` check for `bin/java` is always false;
+- Windows `CreateProcess` cannot launch a `.cmd` shim by bare name - use `sys.executable` for Python
+  sub-steps (and make sure `python3` itself is shell-agnostic, see `docs/environment-gaps.md`);
+- `select(2)` cannot observe a subprocess pipe (`WinError 10093`) - drain output on a reader thread;
+- `os.killpg` / `start_new_session` are POSIX-only - use `taskkill /T` on Windows;
+- SDK tools are `adb.exe`, not `adb`.
+
+Each of these silently makes a real gate **unrunnable**, and an unrunnable check is easy to mistake
+for "nothing to do". Treat "the check could not run" as a finding, never as a pass - that is what
+`docs/environment-gaps.md` exists for.
+
+## Screenshot goldens are OS-bound
+
+JVM screenshot tests (Roborazzi) render through the host's font stack, so goldens recorded on one OS
+do not match another even for byte-identical source. A common trap is to see 20+ "changed" goldens
+on a fresh Windows checkout and re-record them all.
+
+- **Record goldens in the canonical environment** (usually the Linux CI container), not a laptop.
+- **Do not re-record to clear a diff on a different OS.** Verify first that the diff is the intended
+  UI change; if untouched screens also differ, it is the host, not the code. Refreshing the whole
+  set masks that and breaks the canonical goldens.
+- A UI change legitimately makes *its* goldens stale - re-record those, in the canonical
+  environment, as part of that change.
+- Where the golden profile cannot run (different OS, no container), report **NOT EVALUATED**.
+
 ## Verify after applying
 
 ```bash

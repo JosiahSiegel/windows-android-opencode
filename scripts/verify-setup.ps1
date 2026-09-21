@@ -212,6 +212,15 @@ Invoke-Check 'python3 (project tooling)' {
     return @{ Status = 'PASS'; Detail = "$v ($py)" }
 }
 
+Invoke-Check 'python3 (git-bash resolvable)' {
+    # A .cmd shim resolves in PowerShell but NOT in git-bash, where it falls through to the
+    # Microsoft Store stub and reports "Python was not found". Only a real python3.exe works in
+    # every shell, so fail here rather than discovering it mid-task.
+    $py = Resolve-Tool 'python3'
+    if ($py -and $py -notmatch '\.cmd$') { return @{ Status = 'PASS'; Detail = $py } }
+    return @{ Status = 'FAIL'; Detail = 'python3 resolves to a .cmd shim; git-bash cannot run it. Re-run install-toolchain.ps1 (creates python3.exe beside the interpreter) and open a new terminal.' }
+}
+
 Invoke-Check 'node (project tooling)' {
     $node = Resolve-Tool 'node'
     if (-not $node) {
