@@ -1,4 +1,6 @@
-# Transient backup written by fix-machine-path.ps1.
-# Contains this machine's full PATH, including local usernames and install paths, so it is not
-# committed. The script regenerates it on each run.
+# Transient backups of this machine's PATH, written by scripts/repair-path-quotes.ps1 (and its
+# predecessor). They contain local usernames and install paths, so they are not committed.
+# The script regenerates them on each run.
 machine-path-backup.txt
+path-machine-backup.txt
+path-user-backup.txt

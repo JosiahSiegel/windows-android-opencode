@@ -1,5 +1,9 @@
 # OpenCode V2 + native Windows Android setup plan
 
+> **Appendix.** This is the original chronological record of provisioning one specific machine,
+> including dead ends and open questions. It is the evidence behind `../README.md`, and it contains
+> machine-specific paths. Read the README first; treat this as history rather than instructions.
+
 Created 2026-09-21. Target: end-to-end Android development, testing, release, and publication
 using OpenCode V2 on native Windows, with projects under `D:\repos`.
 
