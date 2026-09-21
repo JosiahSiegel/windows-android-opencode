@@ -37,7 +37,7 @@ projects need lives outside this repo:
 
 | What | Where |
 |---|---|
-| JDK | `D:\toolchains\<jdk>` (or your `-ToolchainRoot`) |
+| JDK | wherever `JAVA_HOME` points (set by the install script; override with `-ToolchainRoot`) |
 | Android SDK | `%LOCALAPPDATA%\Android\Sdk` |
 | `JAVA_HOME`, `ANDROID_HOME`, `PATH` | user environment variables |
 | Android CLI defaults | `%USERPROFILE%\.androidrc` |
