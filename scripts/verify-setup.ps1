@@ -198,6 +198,28 @@ Invoke-Check 'OpenCode agents' {
 
 # ---------------------------------------------------------------- PATH sanity
 
+# ---------------------------------------------------------------- project tooling
+
+# Languages that project tooling shells out to. When one is missing, the project's own checks
+# silently cannot run, so it is reported here with the exact fix rather than discovered mid-task.
+
+Invoke-Check 'python3 (project tooling)' {
+    $py = Resolve-Tool 'python3'
+    if (-not $py) {
+        return @{ Status = 'FAIL'; Detail = 'not on PATH; run install-toolchain.ps1 (provisions a portable Python 3 + shim), then open a new terminal' }
+    }
+    $v = (& python3 --version 2>&1 | Select-Object -First 1)
+    return @{ Status = 'PASS'; Detail = "$v ($py)" }
+}
+
+Invoke-Check 'node (project tooling)' {
+    $node = Resolve-Tool 'node'
+    if (-not $node) {
+        return @{ Status = 'WARN'; Detail = 'not on PATH; needed by .mjs tooling - install Node.js LTS' }
+    }
+    return @{ Status = 'PASS'; Detail = ((& node --version 2>&1 | Select-Object -First 1)) }
+}
+
 Invoke-Check 'PATH sanity (stray quotes)' {
     $quote = [char]34
     $bad = @()

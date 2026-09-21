@@ -37,6 +37,12 @@
 .PARAMETER SkipAvd
     Do not create an AVD.
 
+.PARAMETER SkipPython
+    Do not provision the portable Python 3 used by project tooling (tools/*.py).
+
+.PARAMETER PythonVersion
+    Python version for the portable interpreter. Default 3.12.10.
+
 .PARAMETER DryRun
     Print the actions that would be taken without downloading or changing anything.
 
@@ -63,6 +69,8 @@ param(
     [string] $AvdName       = 'pixel_api36',
     [string] $Device        = 'pixel_7',
     [switch] $SkipAvd,
+    [switch] $SkipPython,
+    [string] $PythonVersion = '3.12.10',
     [switch] $DryRun
 )
 
@@ -160,6 +168,39 @@ else {
 
 # ---------------------------------------------------------------- 2. cmdline-tools
 
+# ---------------------------------------------------------------- Python 3
+# Project tooling is invoked as `python3` (e.g. `python3 tools/verify.py fast`). Windows ships no
+# python3, and a missing interpreter makes those checks silently unrunnable - an environment gap
+# that belongs here, not a per-session workaround. Provision a portable embeddable Python plus a
+# `python3` shim on PATH.
+
+Write-Step "Python 3 (portable, $PythonVersion)"
+$pythonRoot = Join-Path $ToolchainRoot 'python'
+$shimBin    = Join-Path $ToolchainRoot 'bin'
+
+if ($SkipPython) {
+    Write-Skip 'skipped (-SkipPython)'
+} elseif (Test-Path -LiteralPath (Join-Path $pythonRoot 'python.exe')) {
+    Write-Skip "found $pythonRoot"
+} elseif ($DryRun) {
+    Write-Note "would install Python $PythonVersion to $pythonRoot and a python3 shim in $shimBin"
+} else {
+    $pyZip = Join-Path $env:TEMP "python-$PythonVersion-embed-amd64.zip"
+    Get-RemoteFile -Url "https://www.python.org/ftp/python/$PythonVersion/python-$PythonVersion-embed-amd64.zip" -Destination $pyZip
+    Expand-Zip -Zip $pyZip -Destination $pythonRoot
+    Write-Ok "installed $pythonRoot"
+}
+
+if (-not $SkipPython -and -not $DryRun) {
+    New-Item -ItemType Directory -Force -Path $shimBin | Out-Null
+    $shim = Join-Path $shimBin 'python3.cmd'
+    Set-Content -LiteralPath $shim -Encoding ASCII -Value @(
+        '@echo off',
+        "`"%~dp0..\python\python.exe`" %*"
+    )
+    Write-Ok "python3 shim: $shim"
+}
+
 Write-Step 'Android SDK command-line tools'
 
 $cltBin = Join-Path $SdkPath 'cmdline-tools\latest\bin'
@@ -203,7 +244,7 @@ Write-Step 'User environment variables'
 if ($DryRun) {
     Write-Note "would set JAVA_HOME=$jdkHome"
     Write-Note "would set ANDROID_HOME=$SdkPath"
-    Write-Note "would prepend %JAVA_HOME%\bin, $cltBin, $SdkPath\platform-tools and $SdkPath\emulator to PATH"
+    Write-Note "would prepend %JAVA_HOME%\bin, $shimBin, $cltBin, $SdkPath\platform-tools and $SdkPath\emulator to PATH"
 }
 else {
     Set-UserPathVariable -Name 'JAVA_HOME'    -Value $jdkHome
@@ -212,6 +253,7 @@ else {
     Write-Ok "ANDROID_HOME=$SdkPath"
 
     Add-UserPathEntry (Join-Path $jdkHome 'bin')
+    if (-not $SkipPython) { Add-UserPathEntry $shimBin }
     Add-UserPathEntry $cltBin
     Add-UserPathEntry (Join-Path $SdkPath 'platform-tools')
     Add-UserPathEntry (Join-Path $SdkPath 'emulator')

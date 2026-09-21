@@ -23,6 +23,7 @@ summarising documentation. Where a claim is version-specific or uncertain, it sa
 | Verification | A script that checks every layer and reports PASS / WARN / FAIL |
 | Manual validation | An interactive emulator window at any checkpoint (`start-manual-test.ps1`) |
 | Long fix lists | A durable work queue the agent consumes one item at a time (`docs/agent-work-queue.md`) |
+| Environment gaps | Missing tools are fixed in the provisioner, never worked around (`docs/environment-gaps.md`) |
 
 **Requirements:** Windows 10 1803+ or Windows 11, x64 (or ARM with the matching binaries), ~6 GB of
 free disk, and a normal user account. Administrator rights are needed **once**, for emulator
@@ -398,6 +399,10 @@ node agent/next-issue.mjs --status     # {"open":27,"fixed":6,...}
 Each iteration loads only the current item, so a session ending is a non-event: the queue is on
 disk and the next session resumes exactly. In OpenCode, run `/ux-issue` to do one iteration.
 
+If a check cannot run because a tool is missing, that is an **environment gap**, not a reason to
+skip the check - see `docs/environment-gaps.md`. Fix it in `install-toolchain.ps1` so every future
+session and project gets it, and let `verify-setup.ps1` catch it early.
+
 ---
 
 ## Troubleshooting
@@ -496,6 +501,7 @@ scripts/add-defender-exclusions.ps1    build-speed exclusions (elevated)
 templates/android/                     post-scaffold additions: ktlint, lint, signing, CI, gitattributes
 templates/agent-work-queue/            durable fix-queue: driver, schema, /ux-issue command
 docs/agent-work-queue.md               the method: one item per fresh context, state on disk
+docs/environment-gaps.md               when a check cannot run: fix the provisioner, not the task
 docs/session-log.md                    the original machine-specific record, kept as an appendix
 ```
 
