@@ -28,6 +28,41 @@ acceleration only.
 
 ---
 
+## How this repo relates to your projects
+
+This repo is a **bootstrap and a toolbox**, not a runtime dependency.
+
+**Provisioning is one-time and machine-wide.** Once `install-toolchain.ps1` has run, everything your
+projects need lives outside this repo:
+
+| What | Where |
+|---|---|
+| JDK | `D:\toolchains\<jdk>` (or your `-ToolchainRoot`) |
+| Android SDK | `%LOCALAPPDATA%\Android\Sdk` |
+| `JAVA_HOME`, `ANDROID_HOME`, `PATH` | user environment variables |
+| Android CLI defaults | `%USERPROFILE%\.androidrc` |
+| Gradle tuning | `%USERPROFILE%\.gradle\gradle.properties` |
+| OpenCode config, instructions, skills, agents, MCP | `%USERPROFILE%\.config\opencode\` |
+
+None of those point back at this repo, so **no project ever references it, and no project needs
+anything copied from it.** Verified: a brand-new empty directory resolves only global OpenCode
+configuration and receives the full agent, skill and MCP set with no per-project setup.
+
+**What remains useful afterwards** are the two diagnostics, which is why the clone is worth keeping
+somewhere convenient:
+
+- `verify-setup.ps1` — re-run whenever a build breaks in a way that looks unrelated to the code
+- `repair-path-quotes.ps1` — the PATH defect it detects can be reintroduced by any installer
+
+The machine does not need this repo present. Only *you* might, and only to run those two.
+
+**A project template is a different role.** A template repository *is* a recurring dependency by
+design — it is the starting point for each new app. Do not confuse the two: this repo sets up the
+machine; a template starts a project. (`android create` can generate a project without any template
+at all, which is often the better option since Google keeps its template current.)
+
+---
+
 ## Quick start
 
 ```powershell
