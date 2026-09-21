@@ -11,6 +11,7 @@ single conversation has to hold the whole programme.
 | `next-issue.mjs` | `<project>/agent/next-issue.mjs` | Prints the next open item, or records a result |
 | `backlog.schema.json` | `<project>/agent/backlog.schema.json` | The item shape |
 | `backlog.example.json` | `<project>/agent/backlog.json` | Starting queue (replace with your items) |
+| `gradle-lock.ps1` | `<project>/agent/gradle-lock.ps1` | Runs a build under a per-project lock so concurrent builds cannot corrupt shared outputs |
 | `commands/ux-issue.md` | `~/.config/opencode/commands/ux-issue.md` | A `/ux-issue` command that runs one iteration |
 
 Adopt it with `scripts/install-agent-work-queue.ps1 -ProjectPath <dir>` (add `-DryRun` to preview),
@@ -35,6 +36,9 @@ node agent/next-issue.mjs --status    # {"open":27,"fixed":6,...}
 5. **Commit per item**, message names the id.
 6. **Three strikes = blocked**, with the smallest unblocking action recorded - never a weakened
    check.
+7. **One build at a time per project.** Run builds as
+   `./agent/gradle-lock.ps1 -Command '.\gradlew.bat <tasks>'`; two builds of one checkout corrupt
+   each other's shared outputs.
 
 ## Item ids
 

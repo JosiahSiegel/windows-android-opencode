@@ -54,6 +54,7 @@ $copies = @(
     @{ From = (Join-Path $source 'next-issue.mjs');       To = (Join-Path $agentDir 'next-issue.mjs');       Required = $true },
     @{ From = (Join-Path $source 'backlog.schema.json');  To = (Join-Path $agentDir 'backlog.schema.json');  Required = $true },
     @{ From = (Join-Path $source 'backlog.example.json'); To = (Join-Path $agentDir 'backlog.json');         Required = $true },
+    @{ From = (Join-Path $source 'gradle-lock.ps1');      To = (Join-Path $agentDir 'gradle-lock.ps1');      Required = $true },
     @{ From = (Join-Path $source 'commands\ux-issue.md'); To = (Join-Path $commandDir 'ux-issue.md');        Required = $true }
 )
 

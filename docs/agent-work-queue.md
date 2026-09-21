@@ -29,6 +29,7 @@ Five rules, each borrowed from an existing practice:
 | **3. Every item has an explicit acceptance check** | Scrum "Definition of Done"; test-driven development |
 | **4. One item per fresh context** | Retrieval + sub-agent delegation: load only the current item, then discard |
 | **5. Commit per item; the ledger records the commit** | Atomic commits; git as the checkpoint log |
+| **6. One build at a time per project** | Mutual exclusion; shared build outputs are a critical section |
 
 The queue is the whole trick: the agent never needs to remember item 27 while doing item 3. It
 reads item 3 from disk, does it, writes the result back, and forgets it.
@@ -62,6 +63,25 @@ For each iteration:
 
 If an item fails its check three times, set `status: "blocked"`, record the **smallest unblocking
 action**, and move to the next item. Do not weaken the check to move on.
+
+## Serialize builds
+
+WIP = 1 applies to the *build*, not just the item. Two Gradle invocations against one checkout share
+`app/build/...`; if their tasks interleave, or one is killed mid-write, they leave truncated shared
+artifacts (a corrupt `test-results` binary, a half-written jar). The agent then sees a failure that
+is not in the code and can burn a whole repair cycle on it.
+
+Parallel workers are the common way to break this, but even a single orchestrator and a background
+task can overlap. Hold the lock whenever a build may overlap another:
+
+```powershell
+# agent/gradle-lock.ps1 is installed alongside next-issue.mjs
+./agent/gradle-lock.ps1 -Command '.\gradlew.bat :app:testDebugUnitTest --rerun-tasks'
+```
+
+It takes a machine-wide named mutex keyed by the project directory, so different projects still
+build in parallel and only builds of the same checkout serialise. See
+`docs/environment-gaps.md` for the failure it prevents.
 
 ## Why this finishes a 30-item list
 

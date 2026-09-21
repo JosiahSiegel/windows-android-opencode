@@ -64,11 +64,46 @@ bare machine that check was unrunnable.
 - **Detected** by the `python3 (project tooling)` check in `verify-setup.ps1`, which prints the
   exact remediation when it is missing.
 
+### The first fix was incomplete - and the follow-up is the real lesson
+
+The shim above was `python3.cmd`. That resolves in cmd and PowerShell but **not in git-bash**, which
+does not execute `.cmd` files: `python3` there fell through to the Microsoft Store stub, so workers
+kept reporting "Python is unavailable". Provisioning a tool is not done until it resolves **in every
+shell the agent actually uses**:
+
+- `python3.exe` - a copy of the interpreter in its own directory (so it still finds `pythonNNN.zip`)
+  resolves in cmd, PowerShell *and* git-bash;
+- `python3.cmd` is kept only as a secondary alias.
+
+Two related traps, both hit for real:
+
+- **A new PATH entry is invisible to an already-running host.** The agent process inherited its PATH
+  at launch, so a tool provisioned afterwards is not on it until the host restarts. Until then, use
+  the absolute path (`<ToolchainRoot>\python\python.exe`), and let `verify-setup.ps1` catch it.
+- **"Command not found" is not the only shape.** The Store stub answers `--version` with an error
+  rather than failing to launch, so a check must look at the *result*, not just at exit 0.
+
+## Worked example: two builds corrupt each other
+
+`:app:testDebugUnitTest` failed with a truncated `test-results` binary, and one worker saw a
+"corrupted by a concurrent Gradle run" error. Nothing was wrong with the code: three workers were
+building the same checkout at once, sharing `app/build/...`.
+
+- **Recognised** because the failure cited a binary artifact, not an assertion, and disappeared on a
+  clean re-run.
+- **Resolved** by serialising builds: `gradle-lock.ps1` takes a machine-wide named mutex keyed by
+  the project directory, so builds of the same checkout queue while different projects stay
+  parallel. WIP = 1 in `docs/agent-work-queue.md` now covers the build, not just the item.
+- **Prevented** by running every build through the lock rather than relying on discipline.
+
 ## What belongs here
 
 | Environment gap | Where it is fixed |
 |---|---|
 | Missing interpreter/CLI a project shells out to (python3, node, git) | `install-toolchain.ps1` + a `verify-setup.ps1` check |
+| A tool exists but the agent's shell cannot resolve it (`.cmd` under git-bash) | give it a shell-agnostic entry point (`python3.exe`), not just a `.cmd` |
+| A provisioned tool is missing because the host started earlier | restart the host, or use the absolute path; `verify-setup.ps1` names it |
+| Concurrent builds corrupting shared outputs | `gradle-lock.ps1` (one build per checkout) |
 | Stray quote or duplicate in PATH | `repair-path-quotes.ps1` |
 | No emulator / no hypervisor | `install-toolchain.ps1`; WHPX is the one admin step |
 | Slow builds | `add-defender-exclusions.ps1` |

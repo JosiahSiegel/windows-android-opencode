@@ -12,7 +12,9 @@ Work exactly one item from the work queue in `agent/backlog.json`. Read
 3. If it is a defect, reproduce it first - a failing check, or a fresh screenshot of the bad state.
 4. Make the smallest change that satisfies the acceptance check.
 5. Verify with the named check. A fix without a passing check is not done. Never weaken the check,
-   skip a test, or edit the acceptance to make it pass.
+   skip a test, or edit the acceptance to make it pass. Run builds through the project lock
+   (`./agent/gradle-lock.ps1 -Command '.\gradlew.bat <tasks>'`) so a concurrent build cannot corrupt
+   shared outputs and hand you a failure that is not in the code.
 6. Commit that item alone, naming its id in the message.
 7. Record the result:
    `node agent/next-issue.mjs --set <id> --status fixed --commit <sha> --verified "<evidence>"`

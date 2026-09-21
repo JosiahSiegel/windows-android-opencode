@@ -171,8 +171,12 @@ else {
 # ---------------------------------------------------------------- Python 3
 # Project tooling is invoked as `python3` (e.g. `python3 tools/verify.py fast`). Windows ships no
 # python3, and a missing interpreter makes those checks silently unrunnable - an environment gap
-# that belongs here, not a per-session workaround. Provision a portable embeddable Python plus a
-# `python3` shim on PATH.
+# that belongs here, not a per-session workaround. Provide a `python3` that resolves in EVERY shell
+# an agent uses:
+#   * python3.exe next to the interpreter - cmd, PowerShell and git-bash all resolve a real .exe;
+#   * python3.cmd as a cmd/PowerShell fallback.
+# A .cmd-only shim is not enough. git-bash does not execute .cmd files, so `python3` there fell
+# through to the Microsoft Store stub ("Python was not found") - the exact failure this prevents.
 
 Write-Step "Python 3 (portable, $PythonVersion)"
 $pythonRoot = Join-Path $ToolchainRoot 'python'
@@ -180,18 +184,22 @@ $shimBin    = Join-Path $ToolchainRoot 'bin'
 
 if ($SkipPython) {
     Write-Skip 'skipped (-SkipPython)'
-} elseif (Test-Path -LiteralPath (Join-Path $pythonRoot 'python.exe')) {
-    Write-Skip "found $pythonRoot"
 } elseif ($DryRun) {
-    Write-Note "would install Python $PythonVersion to $pythonRoot and a python3 shim in $shimBin"
+    Write-Note "would install Python $PythonVersion to $pythonRoot with python3.exe and a python3.cmd alias"
 } else {
-    $pyZip = Join-Path $env:TEMP "python-$PythonVersion-embed-amd64.zip"
-    Get-RemoteFile -Url "https://www.python.org/ftp/python/$PythonVersion/python-$PythonVersion-embed-amd64.zip" -Destination $pyZip
-    Expand-Zip -Zip $pyZip -Destination $pythonRoot
-    Write-Ok "installed $pythonRoot"
-}
+    if (Test-Path -LiteralPath (Join-Path $pythonRoot 'python.exe')) {
+        Write-Skip "found $pythonRoot"
+    } else {
+        $pyZip = Join-Path $env:TEMP "python-$PythonVersion-embed-amd64.zip"
+        Get-RemoteFile -Url "https://www.python.org/ftp/python/$PythonVersion/python-$PythonVersion-embed-amd64.zip" -Destination $pyZip
+        Expand-Zip -Zip $pyZip -Destination $pythonRoot
+        Write-Ok "installed $pythonRoot"
+    }
 
-if (-not $SkipPython -and -not $DryRun) {
+    # A copy in the interpreter's own directory still finds pythonNNN.zip, so it runs anywhere.
+    Copy-Item -LiteralPath (Join-Path $pythonRoot 'python.exe') -Destination (Join-Path $pythonRoot 'python3.exe') -Force
+    Write-Ok "python3 alias: $(Join-Path $pythonRoot 'python3.exe')"
+
     New-Item -ItemType Directory -Force -Path $shimBin | Out-Null
     $shim = Join-Path $shimBin 'python3.cmd'
     Set-Content -LiteralPath $shim -Encoding ASCII -Value @(
@@ -244,7 +252,7 @@ Write-Step 'User environment variables'
 if ($DryRun) {
     Write-Note "would set JAVA_HOME=$jdkHome"
     Write-Note "would set ANDROID_HOME=$SdkPath"
-    Write-Note "would prepend %JAVA_HOME%\bin, $shimBin, $cltBin, $SdkPath\platform-tools and $SdkPath\emulator to PATH"
+    Write-Note "would prepend %JAVA_HOME%\bin, $pythonRoot, $shimBin, $cltBin, $SdkPath\platform-tools and $SdkPath\emulator to PATH"
 }
 else {
     Set-UserPathVariable -Name 'JAVA_HOME'    -Value $jdkHome
@@ -253,7 +261,7 @@ else {
     Write-Ok "ANDROID_HOME=$SdkPath"
 
     Add-UserPathEntry (Join-Path $jdkHome 'bin')
-    if (-not $SkipPython) { Add-UserPathEntry $shimBin }
+    if (-not $SkipPython) { Add-UserPathEntry $pythonRoot; Add-UserPathEntry $shimBin }
     Add-UserPathEntry $cltBin
     Add-UserPathEntry (Join-Path $SdkPath 'platform-tools')
     Add-UserPathEntry (Join-Path $SdkPath 'emulator')
