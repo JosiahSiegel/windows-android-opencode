@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "items": [
+    {
+      "id": "UX-001",
+      "title": "Screen asks the user to acknowledge a warning it never shows",
+      "severity": "high",
+      "area": "issue-detail",
+      "problem": "The review-warning screen renders only a heading and a corrections list; the warning's own title and detail are never displayed, so the user is asked to acknowledge invisible content.",
+      "evidence": ["frames/issue-detail/01-01-warning.png"],
+      "acceptance": "The screen renders the warning title and a one-line description above the corrections; a screenshot shows the text and the acknowledge action still works.",
+      "check": "gradlew.bat :app:testDebugUnitTest",
+      "touch": ["app/src/main/java/com/example/app/ui/IssueDetailScreen.kt"],
+      "status": "open",
+      "commit": null,
+      "verified": null,
+      "note": null
+    },
+    {
+      "id": "UX-002",
+      "title": "Primary action sits below the 56 dp token",
+      "severity": "medium",
+      "area": "size-and-copies",
+      "problem": "The form's Apply button renders at 40 dp while the rest of the app uses a 56 dp primary height, so the main action is a smaller target than elsewhere.",
+      "evidence": ["frames/size-and-copies/01-01-form-open.png"],
+      "acceptance": "Apply is at least 56 dp tall; a screenshot or a rendered-height assertion shows it.",
+      "check": "gradlew.bat :app:testDebugUnitTest",
+      "touch": ["app/src/main/java/com/example/app/ui/DimensionScreen.kt"],
+      "status": "open",
+      "commit": null,
+      "verified": null,
+      "note": null
+    }
+  ]
+}

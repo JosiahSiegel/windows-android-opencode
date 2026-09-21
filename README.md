@@ -21,6 +21,8 @@ summarising documentation. Where a claim is version-specific or uncertain, it sa
 | MCP | Optional Android device control and browser automation |
 | Build tuning | Global Gradle heap, parallel and caching defaults |
 | Verification | A script that checks every layer and reports PASS / WARN / FAIL |
+| Manual validation | An interactive emulator window at any checkpoint (`start-manual-test.ps1`) |
+| Long fix lists | A durable work queue the agent consumes one item at a time (`docs/agent-work-queue.md`) |
 
 **Requirements:** Windows 10 1803+ or Windows 11, x64 (or ARM with the matching binaries), ~6 GB of
 free disk, and a normal user account. Administrator rights are needed **once**, for emulator
@@ -374,6 +376,30 @@ touches, and record what you saw (including anything that felt wrong) rather tha
 
 ---
 
+## Working through a long list of fixes
+
+An agent works inside a finite context window. Give it 30 fixes at once and it will eventually run
+out of working memory mid-change - not because the fixes are hard, but because the whole programme
+is living in the conversation instead of on disk.
+
+The fix is **one item at a time, with the state on disk** (Kanban single-piece flow + a check per
+item + a durable backlog). The full method is in `docs/agent-work-queue.md`.
+
+```powershell
+# scaffold the queue into a project (also installs the /ux-issue command)
+.\scripts\install-agent-work-queue.ps1 -ProjectPath D:\repos\my-app -DryRun
+.\scripts\install-agent-work-queue.ps1 -ProjectPath D:\repos\my-app
+
+# in the project
+node agent/next-issue.mjs --brief      # read ONE item, then fix + verify + commit it
+node agent/next-issue.mjs --status     # {"open":27,"fixed":6,...}
+```
+
+Each iteration loads only the current item, so a session ending is a non-event: the queue is on
+disk and the next session resumes exactly. In OpenCode, run `/ux-issue` to do one iteration.
+
+---
+
 ## Troubleshooting
 
 Every entry below was hit and diagnosed for real.
@@ -464,9 +490,12 @@ scripts/install-toolchain.ps1          provision JDK, SDK, packages, AVD, env va
 scripts/verify-setup.ps1               verify every layer; PASS/WARN/FAIL report
 scripts/start-manual-test.ps1          interactive emulator session for manual validation
 scripts/stop-manual-test.ps1           stop that session
+scripts/install-agent-work-queue.ps1   scaffold the durable fix-queue into a project
 scripts/repair-path-quotes.ps1         find/repair PATH entries containing a stray quote
 scripts/add-defender-exclusions.ps1    build-speed exclusions (elevated)
 templates/android/                     post-scaffold additions: ktlint, lint, signing, CI, gitattributes
+templates/agent-work-queue/            durable fix-queue: driver, schema, /ux-issue command
+docs/agent-work-queue.md               the method: one item per fresh context, state on disk
 docs/session-log.md                    the original machine-specific record, kept as an appendix
 ```
 

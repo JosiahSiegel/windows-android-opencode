@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Agent work queue backlog",
+  "description": "One object per work item. See docs/agent-work-queue.md.",
+  "type": "object",
+  "required": ["schema_version", "items"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "severity", "problem", "acceptance", "status"],
+        "additionalProperties": true,
+        "properties": {
+          "id": { "type": "string", "pattern": "^[A-Z][A-Z0-9]*-[0-9]+$" },
+          "title": { "type": "string", "minLength": 3 },
+          "severity": { "enum": ["high", "medium", "low"] },
+          "area": { "type": "string" },
+          "problem": { "type": "string", "minLength": 3 },
+          "evidence": { "type": "array", "items": { "type": "string" } },
+          "acceptance": { "type": "string", "minLength": 3 },
+          "check": { "type": "string" },
+          "touch": { "type": "array", "items": { "type": "string" } },
+          "status": { "enum": ["open", "fixed", "blocked", "wontfix"] },
+          "commit": { "type": ["string", "null"] },
+          "verified": { "type": ["string", "null"] },
+          "note": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}
