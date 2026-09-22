@@ -81,6 +81,27 @@ on a fresh checkout and re-record them all.
   of that change.
 - Where the golden profile cannot run (a different OS), report **NOT EVALUATED**.
 
+A compact gate for a Python verification entry point (`recording-host.txt` holds `windows` or
+`linux`):
+
+```python
+def current_host_family() -> str:
+    if os.name == "nt": return "windows"
+    if sys.platform == "darwin": return "darwin"
+    return "linux"
+
+marker = ROOT / "app/src/test/screenshots/recording-host.txt"
+recorded_on = marker.read_text(encoding="utf-8").strip().lower() if marker.is_file() else None
+if recorded_on and recorded_on != current_host_family():
+    sys.stderr.write(
+        f"e2e: NOT EVALUATED on {current_host_family()}: goldens were recorded on {recorded_on}; "
+        "JVM screenshot rendering is host-dependent, so the comparison is not run and is NOT a pass.\n"
+        f"e2e: unblock: run this in the canonical environment ({recorded_on}).\n")
+    return 1
+```
+
+Exit non-zero: `NOT EVALUATED` is not a pass, and a zero exit would let it be read as one.
+
 ## Before you trust the project's own tooling
 
 The Gradle build is portable; hand-written Python, shell and Node tooling usually is not, and an
