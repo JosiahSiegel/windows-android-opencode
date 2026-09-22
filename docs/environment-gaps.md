@@ -112,6 +112,24 @@ changed nothing, which made it look like an app defect.
 - **Lesson:** "the app is stuck on the splash" is worth one `dumpsys window | grep mCurrentFocus`
   before it is treated as a product bug — if the ANR is SystemUI's, it is the render path.
 
+## Worked example: the emulator crash-loops in a remote desktop session
+
+After a restart while connected over a remote desktop, the emulator stopped booting: `-gpu host` and
+windowed `-gpu swiftshader_indirect` both printed `Failed to load opengl32sw` → `Software OpenGL
+failed. Falling back to system OpenGL` → a crashpad consent dialog, and `adb` never saw a device.
+
+Three things worth knowing so nobody repeats the dead ends:
+
+- **`opengl32sw` is a red herring.** The module is not shipped by emulator 37.1.11 at all (a recursive
+  search finds nothing) and reinstalling the `emulator` SDK package does not add it. The line is a
+  warning, not the cause.
+- **Reinstalling a package through sdkmanager needs an explicit uninstall first.**
+  `sdkmanager --install emulator` is a no-op when the package already appears installed;
+  `--uninstall emulator` then `--install emulator` forces a clean download.
+- **Resolved** by running the emulator **headless** (`-no-window -gpu swiftshader_indirect`), which
+  booted in 17.5 s and let the smoke test proceed. Headless is the reliable route for *scripted*
+  verification in a remote session; the windowed route is for interactive use at a local console.
+
 ## What belongs here
 
 | Environment gap | Where it is fixed |
@@ -120,7 +138,8 @@ changed nothing, which made it look like an app defect.
 | A tool exists but the agent's shell cannot resolve it (`.cmd` under git-bash) | give it a shell-agnostic entry point (`python3.exe`), not just a `.cmd` |
 | A provisioned tool is missing because the host started earlier | restart the host, or use the absolute path; `verify-setup.ps1` names it |
 | Concurrent builds corrupting shared outputs | `gradle-lock.ps1` (one build per checkout) |
-| Emulator boots but SystemUI ANRs / the screen is black | run it windowed with a real GPU (`-gpu host`); do not use `-no-window` with a software renderer on a desktop host |
+| Emulator boots but SystemUI ANRs / the screen is black (observed on a **local console**) | run it windowed with a real GPU (`-gpu host`) rather than headless with a software renderer |
+| Emulator crash-loops when launched with a window in a **remote desktop** session | run it headless (`-no-window -gpu swiftshader_indirect`) for scripted verification; the Qt window path needs a local console |
 | Stray quote or duplicate in PATH | `repair-path-quotes.ps1` |
 | No emulator / no hypervisor | `install-toolchain.ps1`; WHPX is the one admin step |
 | Slow builds | `add-defender-exclusions.ps1` |
