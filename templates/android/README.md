@@ -64,15 +64,21 @@ for "nothing to do". Treat "the check could not run" as a finding, never as a pa
 
 JVM screenshot tests (Roborazzi) render through the host's font stack, so goldens recorded on one OS
 do not match another even for byte-identical source. A common trap is to see 20+ "changed" goldens
-on a fresh Windows checkout and re-record them all.
+on a fresh checkout and re-record them all.
 
-- **Record goldens in the canonical environment** (usually the Linux CI container), not a laptop.
+- **A project has exactly one canonical host, recorded in the repo** - for example
+  `app/src/test/screenshots/recording-host.txt` holding `windows` or `linux`. The verification entry
+  point reads it and reports **NOT EVALUATED** on any other OS, so a cross-host diff never masquerades
+  as a failure and never tempts a wholesale refresh.
 - **Do not re-record to clear a diff on a different OS.** Verify first that the diff is the intended
-  UI change; if untouched screens also differ, it is the host, not the code. Refreshing the whole
-  set masks that and breaks the canonical goldens.
-- A UI change legitimately makes *its* goldens stale - re-record those, in the canonical
-  environment, as part of that change.
-- Where the golden profile cannot run (different OS, no container), report **NOT EVALUATED**.
+  UI change; if untouched screens also differ, it is the host, not the code.
+- **Moving the canonical host is a deliberate decision, not a snapshot refresh.** When the development
+  environment changes (for example retiring a Linux devcontainer in favour of Windows), re-record the
+  whole set *on the new host* once, flip the marker in the same commit, and say so - that is a
+  re-baseline. Doing it silently to get a green run is the thing to avoid.
+- A UI change legitimately makes *its* goldens stale - re-record those, on the canonical host, as part
+  of that change.
+- Where the golden profile cannot run (a different OS), report **NOT EVALUATED**.
 
 ## Verify after applying
 
