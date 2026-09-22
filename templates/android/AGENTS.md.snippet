@@ -52,6 +52,23 @@ this; give them disjoint files and serialise their builds.
 - A filename, a UI dump or a log line is not an observation. Open the screenshot before citing it.
 - Stop the emulator and `gradlew.bat --stop` when done.
 
+## Device and instrumentation tests
+
+- **A test body runs on the main thread.** Never wait with `Thread.sleep` in an `androidTest`: it
+  blocks the same thread the app's coroutines and Compose frames need, so the work under test never
+  starts and the failure looks like an app bug. Wait the Compose-aware way, with
+  `composeTestRule.waitUntil { ... }`, which keeps the thread pumping. See `docs/environment-gaps.md`.
+- **Semantics are not visibility.** `assertIsEnabled()` passes for a node scrolled out of view, and
+  `performClick()` on it injects outside the window and is silently dropped - no error, no effect.
+  Call `performScrollTo()` first on any screen that scrolls.
+- **Reset the device before a gate.** A shared AVD left at `font_scale 2.0`, or with `wm size`/`wm
+  density` overridden, fails a handful of tests that read as code failures: run
+  `adb shell settings put system font_scale 1.0`, `wm size reset`, `wm density reset` first.
+- **Filtered runs** take the instrumentation runner argument, not `--tests`:
+  `gradlew.bat :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=<FQCN>`.
+- The connected task installs the APK and **uninstalls it when it finishes**, so `run-as <pkg>` and
+  any manual inspection must happen on a separately installed build, not after the suite.
+
 ## Screenshot goldens are host-bound
 
 JVM screenshot tests render through the host font stack, so goldens match only on the host that

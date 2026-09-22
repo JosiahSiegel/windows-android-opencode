@@ -168,6 +168,12 @@ Verify: `opencode --version`, `opencode service status`, `opencode api get /api/
 }
 ```
 
+One caveat on the shell denies: they match the **whole command line as a string**, so `*publish*`
+also blocks a `git commit -m "..."` whose *message* happens to mention publishing, and a broad
+`rm -rf *` blocks a legitimate temp-directory cleanup. An agent then rewords its commands and works
+around the guard, which is worse than the guard. Prefer denying on the tool or subcommand, or on
+paths, and keep commit/notes text out of the match.
+
 Useful commands:
 
 ```bash

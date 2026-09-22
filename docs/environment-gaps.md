@@ -130,6 +130,36 @@ Three things worth knowing so nobody repeats the dead ends:
   booted in 17.5 s and let the smoke test proceed. Headless is the reliable route for *scripted*
   verification in a remote session; the windowed route is for interactive use at a local console.
 
+## Worked example: a device test that starves the very thing it waits for
+
+Two of fifty connected tests failed with `no exported PDF appeared in .../cache/exports within
+60000ms`, and only the two that ran a real export. The app looked broken. It was not.
+
+- **Recognised** by logging the navigation and the export entry point in the app: the tap logged and
+  the destination changed, but the screen never re-composed and the export was never entered - so the
+  job had never started, and nothing inside it had failed.
+- **Cause:** an instrumentation test body runs on the **main thread**, and the new test helper polled
+  the filesystem with `Thread.sleep(100)` in a loop. That held the main thread for the whole 60 s
+  timeout, so Compose could not re-compose and the `LaunchedEffect` that drives the export never got
+  a frame.
+- **Resolved** by waiting the Compose-aware way (`composeTestRule.waitUntil { ... }`), which keeps the
+  main thread pumping. No production code changed.
+- **Lesson:** in an `androidTest`, a blocking sleep is a defect in the test. "The state never
+  appeared" plus "nothing logged after the tap" points at the harness before it points at the app.
+
+## Worked example: a repo checker exits 1 with a `UnicodeDecodeError` on Windows
+
+A project checker read a UTF-8 file without an explicit encoding and died with
+`UnicodeDecodeError: 'charmap' codec can't decode ... cp1252` - exit 1, a wall of traceback, and no
+verdict at all.
+
+- **Recognised** because the identical command exited 0 with `PYTHONUTF8=1`, and the same failure
+  reproduced against the pristine file at `HEAD` - so it was environmental, not a content defect.
+- **Resolved** by setting `PYTHONUTF8=1` in the provisioning, and fixing the tool to open UTF-8
+  explicitly.
+- **Lesson:** a checker that cannot read its input is an **environment gap**, not a failing check.
+  Do not report its exit 1 as a content result, and do not report a green run that never happened.
+
 ## What belongs here
 
 | Environment gap | Where it is fixed |
@@ -140,6 +170,8 @@ Three things worth knowing so nobody repeats the dead ends:
 | Concurrent builds corrupting shared outputs | `gradle-lock.ps1` (one build per checkout) |
 | Emulator boots but SystemUI ANRs / the screen is black (observed on a **local console**) | run it windowed with a real GPU (`-gpu host`) rather than headless with a software renderer |
 | Emulator crash-loops when launched with a window in a **remote desktop** session | run it headless (`-no-window -gpu swiftshader_indirect`) for scripted verification; the Qt window path needs a local console |
+| A repo checker exits 1 with `UnicodeDecodeError`/`cp1252` on Windows | set `PYTHONUTF8=1` in the provisioner, and open files with an explicit encoding in the tool |
+| A connected test times out waiting for state the app never produced | inspect the test for `Thread.sleep`; wait with `rule.waitUntil` |
 | Stray quote or duplicate in PATH | `repair-path-quotes.ps1` |
 | No emulator / no hypervisor | `install-toolchain.ps1`; WHPX is the one admin step |
 | Slow builds | `add-defender-exclusions.ps1` |
