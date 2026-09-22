@@ -19,6 +19,7 @@ when Google's template advances. That is the whole point of not shipping a froze
 | `gradle-libs.versions.toml.snippet` | `gradle/libs.versions.toml` | add both entries |
 | `root-build.gradle.kts.snippet` | `build.gradle.kts` | add one plugin line |
 | `app-build.gradle.kts.snippet` | `app/build.gradle.kts` | add plugin alias, then three blocks |
+| `AGENTS.md.snippet` | project `AGENTS.md` | copy the sections that apply (env, build lock, emulator, goldens, release) |
 
 ## Why each one exists
 
@@ -79,6 +80,27 @@ on a fresh checkout and re-record them all.
 - A UI change legitimately makes *its* goldens stale - re-record those, on the canonical host, as part
   of that change.
 - Where the golden profile cannot run (a different OS), report **NOT EVALUATED**.
+
+## Before you trust the project's own tooling
+
+The Gradle build is portable; hand-written Python, shell and Node tooling usually is not, and an
+unrunnable check is easy to mistake for "nothing to do". Run the checker from the setup repo:
+
+```powershell
+./scripts/check-script-portability.ps1 -Path D:\repos\my-app
+```
+
+It flags the specific defects found in the field (`./gradlew`, bare `python3` in a subprocess,
+`select()` on a pipe, `os.killpg`, `bin/java`, `platform-tools/adb`, PATHEXT) with the fix, and
+reports platform-aware files as INFO so a human confirms rather than the lint guessing. Exit code is
+non-zero when a blocking defect exists, so it can gate a build.
+
+## Releasing an APK for the owner's phone
+
+Do not improvise this. The end-to-end process - build the signed sideload variant, verify the signer
+(not the debug key), smoke-test headless, tag, publish a **private** release, round-trip the hash -
+is in `docs/owner-sideload-release.md`, including the re-key procedure if the release key is ever
+lost and the fallback when no key exists at all.
 
 ## Verify after applying
 

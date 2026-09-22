@@ -25,6 +25,8 @@ summarising documentation. Where a claim is version-specific or uncertain, it sa
 | Long fix lists | A durable work queue the agent consumes one item at a time (`docs/agent-work-queue.md`) |
 | Environment gaps | Missing tools are fixed in the provisioner, never worked around (`docs/environment-gaps.md`) |
 | Parallel workers | Run workers on disjoint files; serialize builds; orchestrator commits (`docs/agent-work-queue.md`) |
+| Windows portability lint | Flags the tooling defects that make a check unrunnable (`scripts/check-script-portability.ps1`) |
+| Owner-sideload release | A signed QA APK to a private GitHub release, safely (`docs/owner-sideload-release.md`) |
 
 **Requirements:** Windows 10 1803+ or Windows 11, x64 (or ARM with the matching binaries), ~6 GB of
 free disk, and a normal user account. Administrator rights are needed **once**, for emulator
@@ -330,9 +332,11 @@ adb wait-for-device
 adb shell getprop sys.boot_completed    # wait for "1"
 ```
 
-Keep secrets out of builds. Drive release signing from environment variables so no key material is
-committed, and do signed release and Play uploads on a Linux CI runner rather than a developer
-machine.
+Keep secrets out of builds. Drive release signing from environment variables or a git-ignored local
+properties file so no key material is committed. To let the owner test on their own phone, use the
+owner-sideload process (`docs/owner-sideload-release.md`): it builds a signed QA APK, verifies the
+signer is the owner key, smoke-tests it, and publishes a **private** release. Play/production signing
+and upload are a different thing and belong on a controlled CI runner, never a developer machine.
 
 ---
 
@@ -464,6 +468,33 @@ badly with sync.
 Expected — V1 plugin implementations do not run in V2. Check whether the package depends on
 `@opencode/plugin` (V2) or `@opencode-ai/plugin` (V1). If it is V1-only, it needs porting.
 
+### Emulator crash-loops instead of booting (remote desktop session)
+
+The emulator's **window** path needs a local console; over a remote desktop it dies in a crashpad
+consent dialog and `adb` never sees a device. Run it headless for scripted verification:
+
+```bash
+emulator -avd <name> -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
+```
+
+Also note: `Failed to load opengl32sw` in the log is a **red herring** — emulator 37.x does not ship
+that module at all, and reinstalling the emulator package does not add it. See
+`docs/environment-gaps.md`.
+
+### `sdkmanager --install <package>` does nothing
+
+It is a no-op when the package looks installed, even if files are missing. To force a clean
+download/repair:
+
+```bash
+sdkmanager --uninstall "emulator"
+sdkmanager --install   "emulator"
+```
+
+### `apkanalyzer` is not under `build-tools`
+
+It ships in `cmdline-tools/latest/bin/`, not `build-tools/`. `apksigner` is the one in `build-tools`.
+
 ### Windows-specific housekeeping
 
 - Use `gradlew.bat`, not `./gradlew`
@@ -498,11 +529,14 @@ scripts/start-manual-test.ps1          interactive emulator session for manual v
 scripts/stop-manual-test.ps1           stop that session
 scripts/install-agent-work-queue.ps1   scaffold the durable fix-queue into a project
 scripts/repair-path-quotes.ps1         find/repair PATH entries containing a stray quote
+scripts/check-script-portability.ps1   flag project tooling that only works on POSIX
 scripts/add-defender-exclusions.ps1    build-speed exclusions (elevated)
 templates/android/                     post-scaffold additions: ktlint, lint, signing, CI, gitattributes
+templates/android/AGENTS.md.snippet    drop-in project practices: build lock, emulator, goldens, release
 templates/agent-work-queue/            durable fix-queue: driver, schema, /ux-issue command
 docs/agent-work-queue.md               the method: one item per fresh context, state on disk
 docs/environment-gaps.md               when a check cannot run: fix the provisioner, not the task
+docs/owner-sideload-release.md         signed QA APK to a private release, verify, and re-key
 docs/session-log.md                    the original machine-specific record, kept as an appendix
 ```
 
